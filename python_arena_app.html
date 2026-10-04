@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>میدان تمرین و بازبینی پایتون | بر اساس Learning Journal</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="python_arena_theme.css">
+  
+  <!-- Pyodide (Python in WebAssembly) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+</head>
+<body>
+  <div id="app" class="app-layout">
+    <!-- Top Global Header -->
+    <header class="app-header">
+      <div class="header-branding">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1>Python Learning Arena</h1>
+          <span class="brand-subtitle">سامانه هوشمند تمرین، ارزیابی و بازبینی ژورنال یادگیری (<a href="https://github.com/heat-core/learning-journal" target="_blank" class="repo-link">heat-core/learning-journal</a>)</span>
+        </div>
+      </div>
+
+      <!-- User Stats HUD -->
+      <div class="header-hud">
+        <div class="hud-item" title="امتیاز تجربه کل">
+          <span class="hud-label">مجموع امتیاز</span>
+          <span class="hud-val highlight-gold"><span id="hud-xp">0</span> <small>XP</small></span>
+        </div>
+        <div class="hud-item" title="سطح فعلی کاربر">
+          <span class="hud-label">سطح مهارت</span>
+          <span class="hud-badge" id="hud-level-badge">سطح ۱: کارآموز</span>
+        </div>
+        <div class="hud-item" title="تعداد تمرین‌های حل شده">
+          <span class="hud-label">تمرین‌ها</span>
+          <span class="hud-val"><span id="hud-solved-count">0</span> / <span id="hud-total-count">0</span></span>
+        </div>
+        <div class="hud-item" title="وضعیت موتور پایتون">
+          <span class="hud-label">موتور پایتون</span>
+          <span class="python-status loading" id="py-status-indicator">
+            <span class="status-dot"></span>
+            <span id="py-status-text">در حال بارگذاری...</span>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-nav">
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-tab="arena">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-2.5 1.55v12.42a1.78 1.78 0 0 0 2.5 1.55L16.5 14.6a1.78 1.78 0 0 0 0-3.2z"/></svg>
+          میدان تمرین و کدنویسی (Interactive Arena)
+        </button>
+        <button class="nav-tab" data-tab="quizzes">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          کوییز مفهومی ژورنال (Quiz & Interview)
+        </button>
+        <button class="nav-tab" data-tab="audit">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          گزارش بازبینی و اصلاحات مخزن (Repo Audit)
+          <span class="audit-counter-badge" id="audit-badge-count">۵ مورد</span>
+        </button>
+        <button class="nav-tab" data-tab="progress">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          داشبورد پیشرفت و مدال‌ها (Badges)
+        </button>
+      </div>
+
+      <div class="nav-actions">
+        <button id="btn-toggle-sound" class="btn-icon" title="صداهای محیط">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-reset-all" class="btn-secondary btn-sm" title="ریست پیشرفت">
+          🔄 پاکسازی حافظه
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="app-main">
+      
+      <!-- TAB 1: PRACTICE ARENA -->
+      <section id="tab-arena" class="tab-content active">
+        <div class="arena-grid">
+          <!-- Sidebar: Level & Exercise Selector -->
+          <aside class="arena-sidebar">
+            <div class="sidebar-header">
+              <h3>مسیر یادگیری (Curriculum)</h3>
+              <span class="subtext">انتخاب مبحث و سطح تمرین</span>
+            </div>
+
+            <!-- Level Selector Tabs -->
+            <div class="level-pills">
+              <button class="level-pill active" data-level="all">همه</button>
+              <button class="level-pill" data-level="1">هفته ۱</button>
+              <button class="level-pill" data-level="2">هفته ۲</button>
+              <button class="level-pill" data-level="3">هفته ۳</button>
+              <button class="level-pill" data-level="4">هفته ۴</button>
+            </div>
+
+            <!-- Exercise List -->
+            <div class="exercise-list" id="exercise-list-container">
+              <!-- Rendered dynamically by app.js -->
+            </div>
+          </aside>
+
+          <!-- Workspace: Problem Description + Code Editor + Tester -->
+          <div class="arena-workspace">
+            
+            <!-- Problem Header & Description -->
+            <div class="problem-card">
+              <div class="problem-header">
+                <div>
+                  <div class="problem-meta">
+                    <span class="meta-tag" id="prob-week">هفته ۲</span>
+                    <span class="meta-tag category" id="prob-category">شی‌گرایی</span>
+                    <span class="difficulty-badge" id="prob-difficulty">متوسط</span>
+                    <span class="points-badge" id="prob-points">+100 XP</span>
+                  </div>
+                  <h2 class="problem-title" id="prob-title">عنوان تمرین</h2>
+                </div>
+
+                <div class="status-indicator-box" id="prob-status-indicator">
+                  <span class="status-text">حل نشده</span>
+                </div>
+              </div>
+
+              <div class="problem-description" id="prob-description">
+                <!-- Description loaded dynamically -->
+              </div>
+            </div>
+
+            <!-- Code Editor Box -->
+            <div class="editor-card">
+              <div class="editor-toolbar">
+                <div class="editor-file-tab">
+                  <span class="py-icon">🐍</span>
+                  <span id="editor-filename">solution.py</span>
+                  <span class="editor-autosave-status" id="editor-save-state">ذخیره شد</span>
+                </div>
+
+                <div class="editor-tools">
+                  <button id="btn-font-smaller" class="btn-tool" title="کوچک‌تر کردن متن">A-</button>
+                  <button id="btn-font-bigger" class="btn-tool" title="بزرگ‌تر کردن متن">A+</button>
+                  <button id="btn-reset-code" class="btn-tool" title="بازنشانی کد به حالت اولیه">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    کد اولیه
+                  </button>
+                  <button id="btn-show-hint" class="btn-tool" title="دریافت راهنمایی">
+                    💡 راهنما
+                  </button>
+                  <button id="btn-show-solution" class="btn-tool text-amber" title="مشاهده پاسخ استاندارد">
+                    ✨ پاسخ نمونه
+                  </button>
+                </div>
+              </div>
+
+              <!-- Code Textarea with Line Numbers -->
+              <div class="editor-wrapper">
+                <div class="line-numbers" id="line-numbers">1</div>
+                <textarea id="code-editor" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="# کد پایتون خود را اینجا بنویسید..."></textarea>
+              </div>
+
+              <!-- Editor Actions Footer -->
+              <div class="editor-actions">
+                <div class="shortcut-tip">
+                  <span>کلید میانبر: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> برای ارزیابی سریع</span>
+                </div>
+
+                <div class="action-buttons">
+                  <button id="btn-run-code-only" class="btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    فقط اجرای کد
+                  </button>
+                  <button id="btn-test-code" class="btn-primary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    بررسی و اجرای تست‌ها (Test & Score)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results & Terminal Console -->
+            <div class="output-card">
+              <div class="output-tabs">
+                <button class="output-tab active" data-outtab="tests">
+                  🧪 نتایج تست‌ها (<span id="tests-pass-count">0</span>/<span id="tests-total-count">0</span>)
+                </button>
+                <button class="output-tab" data-outtab="console">
+                  📟 خروجی کنسول پایتون (Stdout / Stderr)
+                </button>
+                <button class="output-tab" data-outtab="explanation">
+                  📖 تحلیل و رفع اشکال هوشمند
+                </button>
+              </div>
+
+              <div class="output-content">
+                <!-- Tests tab -->
+                <div id="outtab-tests" class="outtab-pane active">
+                  <div class="test-feedback-header" id="test-overall-banner">
+                    <div class="banner-icon">ℹ️</div>
+                    <div class="banner-body">
+                      <h4>آماده برای آزمودن کد</h4>
+                      <p>کد خود را در ادیتور بالا بنویسید و روی دکمه <b>بررسی و اجرای تست‌ها</b> کلیک کنید تا درستی منطق و کلاس‌های شما به طور خودکار سنجیده شود.</p>
+                    </div>
+                  </div>
+                  <div class="test-cases-container" id="test-cases-list">
+                    <!-- Dynamic test cases will render here -->
+                  </div>
+                </div>
+
+                <!-- Console tab -->
+                <div id="outtab-console" class="outtab-pane">
+                  <pre class="terminal-view" id="terminal-output">سیستم آماده است. خروجی دستور print() و پیام‌های خطا در این پنجره نمایش داده می‌شوند.</pre>
+                </div>
+
+                <!-- Explanation tab -->
+                <div id="outtab-explanation" class="outtab-pane">
+                  <div class="explanation-box" id="explanation-content">
+                    <p class="placeholder-text">پس از اجرای تست‌ها، اگر در کدی خطایی وجود داشته باشد، سیستم عیب‌یابی هوشمند دلایل احتمالی و نقاط اصلاح را به زبان ساده در اینجا به شما نشان می‌دهد.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: CONCEPTUAL QUIZZES -->
+      <section id="tab-quizzes" class="tab-content">
+        <div class="quizzes-container">
+          <div class="quizzes-header">
+            <div>
+              <h2>خودآزمایی و تست‌های مفهومی ژورنال</h2>
+              <p>این سوالات از عمیق‌ترین نکات مطرح‌شده در یادداشت‌ها و تمرین‌های ۴ هفته ژورنال طراحی شده‌اند.</p>
+            </div>
+            <div class="quiz-score-summary">
+              <span>نمره آزمون مفهومی:</span>
+              <strong id="quiz-total-score">۰ / ۶</strong>
+            </div>
+          </div>
+
+          <div class="quiz-grid" id="quizzes-list-container">
+            <!-- Rendered dynamically from quizzes.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: REPO AUDIT & CODE FIXES -->
+      <section id="tab-audit" class="tab-content">
+        <div class="audit-container">
+          <div class="audit-hero">
+            <div class="hero-badge">تحلیل تخصصی مخزن learning-journal</div>
+            <h2>گزارش بازبینی کدها و مستندات مخزن GitHub</h2>
+            <p>در پاسخ به سوال شما (<i>«جایی هست که نیاز به اصلاح داشته باشه؟»</i>)، کل مخزن به دقت آنالیز شد. ۵ مورد کلیدی شامل خطای سینتکس/ایندنت، فایل‌های خالی رها شده، تمرین‌های نیمه‌کاره و دام‌های پایتونیک شناسایی شد که در زیر به همراه کدهای اصلاحی دقیق آورده شده است:</p>
+          </div>
+
+          <div class="audit-cards-grid" id="audit-cards-container">
+            <!-- Rendered dynamically from journal_audit.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: PROGRESS & BADGES -->
+      <section id="tab-progress" class="tab-content">
+        <div class="progress-container">
+          <div class="progress-hero">
+            <h2>کارنامه و مدال‌های مهارتی شما</h2>
+            <p>تمامی فعالیت‌ها، امتیازها و کدهایی که در این محیط حل می‌کنید به صورت محلی در مرورگر شما ذخیره می‌شوند.</p>
+            
+            <div class="level-progress-bar-wrapper">
+              <div class="progress-labels">
+                <span id="rank-current-name">سطح ۱: کارآموز پایتون</span>
+                <span id="rank-next-name">سطح بعدی: برنامه‌نویس شیءگرا (نیاز به ۱۰۰ XP)</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="xp-progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="badges-section">
+            <h3>مدال‌های افتخار و اچیومنت‌ها (Badges)</h3>
+            <div class="badges-grid" id="badges-grid-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="topics-breakdown-section">
+            <h3>تسلط بر مباحث ۴ هفته</h3>
+            <div class="topics-grid">
+              <div class="topic-card">
+                <span class="topic-week">هفته اول</span>
+                <h4>مبانی و ساختارهای داده</h4>
+                <p>توابع، ساختارهای کنترلی، مدیریت رشته‌ها و دیکشنری‌ها</p>
+                <div class="topic-status" id="status-topic-1">در انتظار تکمیل</div>
+              </div>
+              <div class="topic-card">
+                <span class="topic-week">هفته دوم</span>
+                <h4>شی‌گرایی و کپسوله‌سازی</h4>
+                <p>کلاس‌ها، شیء، متدهای سازنده، ارث‌بری وسایل نقلیه و داروخانه</p>
+                <div class="topic-status" id="status-topic-2">در انتظار تکمیل</div>
+              </div>
+              <div class="topic-card">
+                <span class="topic-week">هفته سوم</span>
+                <h4>مدل داده پایتون و الگوها</h4>
+                <p>داندر متدها، ارث‌بری از int، الگوی پروکسی، پروتکل Iterator</p>
+                <div class="topic-status" id="status-topic-3">در انتظار تکمیل</div>
+              </div>
+              <div class="topic-card">
+                <span class="topic-week">هفته چهارم</span>
+                <h4>سیستم‌های پیشرفته و همروندی</h4>
+                <p>دکوراتورهای ۳ لایه با wraps، مدیریت تردها و Lock، پردازش مالی</p>
+                <div class="topic-status" id="status-topic-4">در انتظار تکمیل</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Modal for Solution / Hint -->
+    <div id="modal-backdrop" class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-title">راهنما</h3>
+          <button id="modal-close" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Dynamic content -->
+        </div>
+        <div class="modal-footer">
+          <button id="modal-action-btn" class="btn-secondary">متوجه شدم</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Data files -->
+  <script src="python_exercises_db.js"></script>
+  <script src="python_quizzes_db.js"></script>
+  <script src="python_audit_report.js"></script>
+  <!-- Main logic -->
+  <script src="python_arena_engine.js"></script>
+</body>
+</html>
