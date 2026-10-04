@@ -75,22 +75,7 @@ python python_runner.py
 python python_test_framework.py
 ```
 
----
 
-## 📦 ارسال به گیت‌هاب (Push to GitHub)
-
-این دایرکتوری به عنوان یک مخزن Git آماده شده است. برای پوش کردن به گیت‌هاب شخصی خود، مراحل زیر را در این پوشه اجرا کنید:
-
-```bash
-# ۱. اضافه کردن آدرس مخزن گیت‌هاب خود
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-
-# ۲. تغییر نام شاخه به main
-git branch -M main
-
-# ۳. ارسال به مخزن راه دور
-git push -u origin main
-```
 
 ---
 **ساخته شده با ❤️ برای جامعه برنامه‌نویسان پایتون**
